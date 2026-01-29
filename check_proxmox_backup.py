@@ -48,7 +48,7 @@ def output_quit(status, ok_taskcount, error_taskcount, warning_taskcount, exitco
     if exitcode == 3:
         status_info = ""
     else:
-        status_info = f" | success={ok_taskcount} errors={error_taskcount} warnings={warning_taskcount}"
+        status_info = f" success={ok_taskcount} errors={error_taskcount} warnings={warning_taskcount}"
     print(
         f"SERVICE STATUS: {status}{status_info}"
     )
