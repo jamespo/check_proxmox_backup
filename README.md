@@ -8,16 +8,25 @@ This script queries the Proxmox Backup Server API to retrieve task statuses (spe
 
 - Checks backup job statuses for the last 24 hours (configurable).
 - Standard Nagios/Icinga exit codes (0=OK, 1=WARNING, 2=CRITICAL, 3=UNKNOWN).
-- Performance data output for graphing (success, errors, warnings).
-- Secure API Token authentication.
+- Reports counts of successful, warning, and error jobs.
+- Secure API Token authentication (inline or from file).
+- Optional verbose output listing successful VMIDs.
 
 ## Requirements
 
 - Python 3
 - `requests` library
 
+Install dependencies manually:
+
 ```bash
 pip3 install requests
+```
+
+Or using the provided `requirements.txt`:
+
+```bash
+pip3 install -r requirements.txt
 ```
 
 ## Setup
@@ -45,26 +54,43 @@ chmod +x check_proxmox_backup.py
 ## Usage
 
 ```bash
-./check_proxmox_backup.py -f <FQDN> -t <TOKEN> [-d <DURATION_SECONDS>]
+./check_proxmox_backup.py -f <FQDN> { -t <TOKEN> | -c <TOKEN_FILE> } [-d <DURATION_SECONDS>] [-v]
 ```
 
 ### Arguments
 
 - `-f`, `--fqdn`: The Fully Qualified Domain Name (or IP) of the Proxmox Backup Server.
 - `-t`, `--token`: The API Token constructed as `<user>@<realm>!<tokenid>:<secret>`.
+- `-c`, `--config-token-file`: Path to a file containing the API token (alternative to `-t`; useful for keeping secrets out of process lists and command history).
 - `-d`, `--duration`: (Optional) Time in seconds to look back for jobs. Default is `86400` (24 hours).
+- `-v`, `--verbose`: (Optional) Include a list of successful VMIDs in the output.
+
+> **Note:** `-t` and `-c` are mutually exclusive; exactly one must be provided.
 
 ## Examples
 
-**Manual Check:**
+**Manual Check (token inline):**
 
 ```bash
 ./check_proxmox_backup.py -f pbs.example.com -t "root@pam!monitoring:secret-key-here"
 ```
 
+**Manual Check (token from file):**
+
+```bash
+./check_proxmox_backup.py -f pbs.example.com -c /etc/nagios/pbs_token.txt
+```
+
+**Verbose output:**
+
+```bash
+./check_proxmox_backup.py -f pbs.example.com -c /etc/nagios/pbs_token.txt -v
+```
+
 **Output:**
 ```text
-SERVICE STATUS: OK | success=15 errors=0 warnings=0
+SERVICE STATUS: OK success=15 errors=0 warnings=0
+SERVICE STATUS: OK success=15 errors=0 warnings=0 / Successful VMIDs: 101,102,103
 ```
 
 **Icinga 2 Service definition example:**
@@ -75,8 +101,21 @@ object CheckCommand "check_pbs" {
   command = [ PluginDir + "/check_proxmox_backup.py" ]
   arguments = {
     "-f" = "$pbs_fqdn$"
-    "-t" = "$pbs_token$"
-    "-d" = "$pbs_duration$"
+    "-t" = {
+      value = "$pbs_token$"
+      required = false
+    }
+    "-c" = {
+      value = "$pbs_token_file$"
+      required = false
+    }
+    "-d" = {
+      value = "$pbs_duration$"
+      required = false
+    }
+    "-v" = {
+      set_if = "$pbs_verbose$"
+    }
   }
 }
 

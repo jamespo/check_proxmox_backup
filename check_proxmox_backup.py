@@ -7,15 +7,38 @@ import os, sys, requests, urllib3, argparse, time
 urllib3.disable_warnings()
 from collections import Counter
 
+def read_token_from_file(path: str) -> str:
+    """read API token from a file, stripping whitespace"""
+    try:
+        with open(path, "r") as f:
+            token = f.read().strip()
+        if not token:
+            print(f"UNKNOWN: Token file '{path}' is empty")
+            sys.exit(3)
+        return token
+    except OSError as e:
+        print(f"UNKNOWN: Cannot read token file '{path}' ({e})")
+        sys.exit(3)
+
 def getargs() -> argparse.Namespace:
     """parse CL args"""
     parser = argparse.ArgumentParser()
     parser.add_argument("-f", "--fqdn", help="fqdn of PMBS")
-    parser.add_argument("-t", "--token", help="API token: <username>@pbs!<api id>:<api secret>")
     parser.add_argument("-d", "--duration", help="seconds back to check",
                         type=int, default=86400)
     parser.add_argument("-v", "--verbose", action="store_true", help="more detail on jobs")
-    return parser.parse_args()
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("-t", "--token", help="API token: <username>@pbs!<api id>:<api secret>")
+    group.add_argument("-c", "--config-token-file", help="path to file containing the API token", metavar="FILE")
+    if len(sys.argv) == 1:
+        parser.print_help()
+        sys.exit(3)
+    args = parser.parse_args()
+    if args.config_token_file:
+        args.token = read_token_from_file(args.config_token_file)
+    if not args.token:
+        parser.error("one of -t/--token or -c/--config-token-file is required")
+    return args
 
 def query_pmbs(args, host="localhost", worker_type="backup") -> tuple[str, int|None, int|None, int|None, list]:
     """returns optional error string & # of ok, error, warning jobs & list of jobdetails"""
