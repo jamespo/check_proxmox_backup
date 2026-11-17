@@ -63,10 +63,20 @@ def query_pmbs(args, host="localhost", worker_type="backup") -> tuple[str, int|N
                     continue
                 if os.getenv("CBPDEBUG"):
                     print(job, "\n")
-                if args.verbose and job["status"] == "OK":
-                    # build list of successful jobs by VM
-                    jobdetails.append(job["worker_id"].split("/")[-1])
-                jobcount.update({ job["status"] : 1 })
+                if "status" not in job:
+                    # task still running - no status/endtime yet
+                    continue
+                status = job["status"]
+                # PBS sets status to "OK", "WARNINGS: <n>", or the error message itself
+                if status == "OK":
+                    if args.verbose:
+                        # build list of successful jobs by VM
+                        jobdetails.append(job["worker_id"].split("/")[-1])
+                    jobcount["OK"] += 1
+                elif status.startswith("WARNINGS"):
+                    jobcount["WARNING"] += 1
+                else:
+                    jobcount["ERROR"] += 1
         else:
             error = f"Unexpected status code: {resp.status_code}"
     except requests.exceptions.RequestException as e:
