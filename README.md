@@ -29,6 +29,8 @@ Or using the provided `requirements.txt`:
 pip3 install -r requirements.txt
 ```
 
+Or just through your system package manager.
+
 ## Setup
 
 ### 1. Create an API Token on Proxmox Backup Server
@@ -36,7 +38,7 @@ pip3 install -r requirements.txt
 1. Log in to your Proxmox Backup Server web interface.
 2. Go to **Configuration** -> **Access Control**.
 3. Select the **API Token** tab and click **Add**.
-4. Select a user (e.g., `root@pam` or a dedicated monitoring user) and enter a Token ID (e.g., `nagios`).
+4. Select a user (e.g., `root@pam` or (better) a dedicated monitoring user) and enter a Token ID (e.g., `nagios`).
 5. **Important:** Uncheck "Privilege Separation" if you want the token to inherit the user's permissions, or configure specific permissions for the token afterwards.
 6. Copy the **Secret** value immediately. You will need it for the script argument.
 
